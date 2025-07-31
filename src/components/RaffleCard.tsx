@@ -82,6 +82,11 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
           <Flex align="center" gap="2">
             <Text size="3" weight="bold">Raffle</Text>
             {isOwner && <Crown size={16} className="text-yellow-500" />}
+            {(raffle as any).isPlaceholder && (
+              <Text size="1" className="px-2 py-1 bg-gray-100 rounded text-gray-600">
+                Click refresh for details
+              </Text>
+            )}
           </Flex>
           <Badge color={raffle.isOpen ? "green" : "gray"}>
             {raffle.isOpen ? "OPEN" : "CLOSED"}

@@ -16,7 +16,7 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
   const [raffleId, setRaffleId] = useState("");
   const [raffleData, setRaffleData] = useState<any>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const { fetchRaffleData, loading: dataLoading } = useRaffleData(packageId);
+  const { fetchRaffleData, fetchEntrants, loading: dataLoading } = useRaffleData(packageId);
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const loadRaffleInfo = async () => {
@@ -34,6 +34,16 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
     if (data) {
       setRaffleData(data);
       toast.success("Raffle loaded successfully!");
+      
+      // Also try to fetch entrants list separately
+      try {
+        const entrantsList = await fetchEntrants(raffleId);
+        if (entrantsList.length > 0) {
+          setRaffleData((prev: any) => prev ? { ...prev, entrants: entrantsList } : null);
+        }
+      } catch (error) {
+        console.warn("Could not fetch entrants list:", error);
+      }
     } else {
       toast.error("Raffle not found or invalid");
       setRaffleData(null);

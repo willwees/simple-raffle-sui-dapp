@@ -7,7 +7,9 @@ import { CreateRaffle } from "./CreateRaffle";
 import { JoinRaffle } from "./JoinRaffle";
 import { RaffleCard } from "./RaffleCard";
 import { WinnerAnnouncement } from "./WinnerAnnouncement";
+import { DebugViewFunctions } from "./DebugViewFunctions";
 import { useRaffleEvents } from "../hooks/useRaffleEvents";
+import { useRaffleData } from "../hooks/useRaffleData";
 import { DEFAULT_PACKAGE_ID } from "../utils/constants";
 import { isValidSuiObjectId } from "../utils/formatters";
 
@@ -16,43 +18,68 @@ export const RaffleManager = () => {
   const [myRaffles, setMyRaffles] = useState<any[]>([]);
   const [joinedRaffles, setJoinedRaffles] = useState<any[]>([]);
   const [winners, setWinners] = useState<any[]>([]);
+  const [loadingRaffles, setLoadingRaffles] = useState(false);
   const currentAccount = useCurrentAccount();
   const { events } = useRaffleEvents(packageId);
+  const { fetchRaffleData } = useRaffleData(packageId);
+
+  // Helper function to fetch real raffle data for a list of raffle IDs
+  const fetchRealRaffleData = async (raffleIds: string[]) => {
+    if (!raffleIds.length) return [];
+    
+    setLoadingRaffles(true);
+    const realRaffleData = [];
+    
+    // Add delay between requests to avoid rate limiting
+    for (let i = 0; i < raffleIds.length; i++) {
+      const raffleId = raffleIds[i];
+      try {
+        const data = await fetchRaffleData(raffleId);
+        if (data) {
+          realRaffleData.push(data);
+        }
+        
+        // Add delay between requests (except for the last one)
+        if (i < raffleIds.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch data for raffle ${raffleId}:`, error);
+        
+        // If it's a rate limit error, add longer delay
+        if (error instanceof Error && error.message.includes('429')) {
+          console.warn('Rate limited, waiting longer...');
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2s delay for rate limits
+        }
+      }
+    }
+    
+    setLoadingRaffles(false);
+    return realRaffleData;
+  };
 
   // Process events to extract raffles and winners
   useEffect(() => {
-    if (!events.length || !currentAccount) return;
+    if (!events.length || !currentAccount) {
+      setMyRaffles([]);
+      setJoinedRaffles([]);
+      setWinners([]);
+      return;
+    }
 
-    const myCreatedRaffles: any[] = [];
-    const myJoinedRaffles: any[] = [];
+    const myCreatedRaffleIds = new Set<string>();
+    const myJoinedRaffleIds = new Set<string>();
     const recentWinners: any[] = [];
 
     events.forEach((event: any) => {
       // Process RaffleCreated events
       if (event.type?.includes('RaffleCreated') && event.owner === currentAccount.address) {
-        myCreatedRaffles.push({
-          id: event.raffle_id,
-          owner: event.owner,
-          entrants: [],
-          entrantCount: 0,
-          poolValue: 0,
-          isOpen: true,
-        });
+        myCreatedRaffleIds.add(event.raffle_id);
       }
 
       // Process PlayerJoined events
       if (event.type?.includes('PlayerJoined') && event.player === currentAccount.address) {
-        const existingRaffle = myJoinedRaffles.find(r => r.id === event.raffle_id);
-        if (!existingRaffle) {
-          myJoinedRaffles.push({
-            id: event.raffle_id,
-            owner: '', // We don't have owner info in join events
-            entrants: [event.player],
-            entrantCount: event.total_entrants || 1,
-            poolValue: event.total_entrants * 1_000_000_000 || 0,
-            isOpen: true,
-          });
-        }
+        myJoinedRaffleIds.add(event.raffle_id);
       }
 
       // Process WinnerPicked events
@@ -66,8 +93,29 @@ export const RaffleManager = () => {
       }
     });
 
-    setMyRaffles(myCreatedRaffles);
-    setJoinedRaffles(myJoinedRaffles);
+    // Create placeholder raffles with basic info from events
+    const myPlaceholderRaffles = Array.from(myCreatedRaffleIds).map(id => ({
+      id,
+      owner: currentAccount.address,
+      entrants: [],
+      entrantCount: 0,
+      poolValue: 0,
+      isOpen: true,
+      isPlaceholder: true, // Mark as placeholder
+    }));
+
+    const joinedPlaceholderRaffles = Array.from(myJoinedRaffleIds).map(id => ({
+      id,
+      owner: '',
+      entrants: [],
+      entrantCount: 0,
+      poolValue: 0,
+      isOpen: true,
+      isPlaceholder: true, // Mark as placeholder
+    }));
+
+    setMyRaffles(myPlaceholderRaffles);
+    setJoinedRaffles(joinedPlaceholderRaffles);
     setWinners(recentWinners.slice(0, 3)); // Show only recent 3 winners
   }, [events, currentAccount]);
 
@@ -78,9 +126,30 @@ export const RaffleManager = () => {
     }
   };
 
-  const refreshData = () => {
-    // This will trigger a re-fetch of events
-    toast.success("Data refreshed!");
+  const refreshData = async () => {
+    // This will trigger a re-fetch of events and real raffle data
+    toast.success("Refreshing raffle data...");
+    
+    try {
+      // Fetch real data for all raffles
+      const [myRaffleData, joinedRaffleData] = await Promise.all([
+        myRaffles.length > 0 ? fetchRealRaffleData(myRaffles.map(r => r.id)) : Promise.resolve([]),
+        joinedRaffles.length > 0 ? fetchRealRaffleData(joinedRaffles.map(r => r.id)) : Promise.resolve([]),
+      ]);
+
+      if (myRaffleData.length > 0) {
+        setMyRaffles(myRaffleData);
+      }
+      
+      if (joinedRaffleData.length > 0) {
+        setJoinedRaffles(joinedRaffleData);
+      }
+      
+      toast.success("Data refreshed successfully!");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.error("Failed to refresh data. Check console for details.");
+    }
   };
 
   if (!currentAccount) {
@@ -117,10 +186,16 @@ export const RaffleManager = () => {
             </Button>
           </Flex>
           <Text size="1" color="gray">
-            Current: {packageId || "No package ID set"}
+            Current: {packageId || "No package ID set"} | Network: devnet
+          </Text>
+          <Text size="1" color="orange">
+            💡 Tip: Raffles show basic info from events. Click refresh (🔄) to get real-time status and details.
           </Text>
         </Flex>
       </Card>
+
+      {/* Debug Component - Remove in production */}
+      <DebugViewFunctions />
 
       {/* Winner Announcements */}
       {winners.length > 0 && (
@@ -158,7 +233,10 @@ export const RaffleManager = () => {
 
         <Tabs.Content value="my-raffles" className="mt-4">
           <Flex direction="column" gap="4">
-            <Text size="4" weight="bold">My Created Raffles</Text>
+            <Flex justify="between" align="center">
+              <Text size="4" weight="bold">My Created Raffles</Text>
+              {loadingRaffles && <Text size="2" color="gray">Loading...</Text>}
+            </Flex>
             {myRaffles.length > 0 ? (
               <Flex direction="column" gap="3">
                 {myRaffles.map((raffle) => (
@@ -170,6 +248,12 @@ export const RaffleManager = () => {
                   />
                 ))}
               </Flex>
+            ) : loadingRaffles ? (
+              <Card className="p-6 text-center">
+                <Text size="3" color="gray">
+                  Loading your raffles...
+                </Text>
+              </Card>
             ) : (
               <Card className="p-6 text-center">
                 <Text size="3" color="gray">
@@ -185,7 +269,10 @@ export const RaffleManager = () => {
 
         <Tabs.Content value="joined" className="mt-4">
           <Flex direction="column" gap="4">
-            <Text size="4" weight="bold">Raffles I've Joined</Text>
+            <Flex justify="between" align="center">
+              <Text size="4" weight="bold">Raffles I've Joined</Text>
+              {loadingRaffles && <Text size="2" color="gray">Loading...</Text>}
+            </Flex>
             {joinedRaffles.length > 0 ? (
               <Flex direction="column" gap="3">
                 {joinedRaffles.map((raffle) => (
@@ -197,6 +284,12 @@ export const RaffleManager = () => {
                   />
                 ))}
               </Flex>
+            ) : loadingRaffles ? (
+              <Card className="p-6 text-center">
+                <Text size="3" color="gray">
+                  Loading joined raffles...
+                </Text>
+              </Card>
             ) : (
               <Card className="p-6 text-center">
                 <Text size="3" color="gray">
