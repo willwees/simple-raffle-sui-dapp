@@ -53,7 +53,8 @@ export function SimpleRaffleInterface() {
       
       toast.success('Raffle created successfully! 🎉');
     } catch (error) {
-      toast.error('Failed to create raffle');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create raffle';
+      toast.error(errorMessage);
       console.error(error);
     }
   };
@@ -77,7 +78,8 @@ export function SimpleRaffleInterface() {
       refetch();
       toast.success('Successfully joined raffle! 🎫');
     } catch (error) {
-      toast.error('Failed to join raffle');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join raffle';
+      toast.error(errorMessage);
       console.error(error);
     }
   };
@@ -94,7 +96,8 @@ export function SimpleRaffleInterface() {
       refetch();
       toast.success('Winner picked successfully! 🏆');
     } catch (error) {
-      toast.error('Failed to pick winner. Make sure you are the raffle owner.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to pick winner';
+      toast.error(errorMessage);
       console.error(error);
     }
   };

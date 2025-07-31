@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useSignAndExecuteTransaction, useCurrentAccount } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction, useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { RAFFLE_PACKAGE_ID } from '../utils/constants';
+import { detectTransactionErrors, parseTransactionError } from '../utils/transactionErrorDetection';
 
 /**
  * 🎫 JOIN RAFFLE HOOK
@@ -13,6 +14,7 @@ export function useJoinRaffle() {
   const [isJoining, setIsJoining] = useState(false);
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
   const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
 
   const joinRaffle = async (raffleId: string) => {
     setIsJoining(true);
@@ -53,11 +55,16 @@ export function useJoinRaffle() {
         transaction: tx,
       });
 
-      console.log('Joined raffle:', result);
+      // Use centralized error detection with retry logic
+      await detectTransactionErrors(result, suiClient, 'Join raffle');
+
+      console.log('Joined raffle successfully:', result);
       return result;
     } catch (error) {
       console.error('Error joining raffle:', error);
-      throw error;
+      // Use enhanced error parsing for better user messages
+      const errorMessage = parseTransactionError(error, 'Join raffle');
+      throw new Error(errorMessage);
     } finally {
       setIsJoining(false);
     }

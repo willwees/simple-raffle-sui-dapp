@@ -19,3 +19,21 @@ export const FUNCTIONS = {
   IS_OPEN: "is_open",
   GET_OWNER: "get_owner",
 } as const;
+
+// Error codes from the smart contract
+export const ERROR_CODES = {
+  ERaffleNotOpen: 0,
+  EInsufficientPayment: 1,
+  ENotOwner: 2,
+  EAlreadyJoined: 3,
+  EInsufficientParticipants: 4,
+} as const;
+
+// Error messages for user-friendly display
+export const ERROR_MESSAGES = {
+  [ERROR_CODES.ERaffleNotOpen]: "This raffle is not open for entries",
+  [ERROR_CODES.EInsufficientPayment]: "Insufficient payment amount",
+  [ERROR_CODES.ENotOwner]: "Only the raffle owner can perform this action",
+  [ERROR_CODES.EAlreadyJoined]: "You have already joined this raffle",
+  [ERROR_CODES.EInsufficientParticipants]: "Not enough participants to pick a winner",
+} as const;

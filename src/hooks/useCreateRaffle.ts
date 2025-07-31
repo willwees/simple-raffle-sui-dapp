@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { RAFFLE_PACKAGE_ID } from '../utils/constants';
+import { detectTransactionErrors, parseTransactionError } from '../utils/transactionErrorDetection';
 
 /**
  * 🎯 CREATE RAFFLE HOOK
@@ -16,6 +17,7 @@ import { RAFFLE_PACKAGE_ID } from '../utils/constants';
 export function useCreateRaffle() {
   const [isCreating, setIsCreating] = useState(false);
   const { mutateAsync: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const suiClient = useSuiClient();
 
   const createRaffle = async () => {
     setIsCreating(true);
@@ -38,11 +40,16 @@ export function useCreateRaffle() {
         transaction: tx,
       });
 
-      console.log('Raffle created:', result);
+      // Use centralized error detection with retry logic
+      await detectTransactionErrors(result, suiClient, 'Create raffle');
+
+      console.log('Raffle created successfully:', result);
       return result;
     } catch (error) {
       console.error('Error creating raffle:', error);
-      throw error;
+      // Use enhanced error parsing for better user messages
+      const errorMessage = parseTransactionError(error, 'Create raffle');
+      throw new Error(errorMessage);
     } finally {
       setIsCreating(false);
     }
