@@ -12,6 +12,7 @@ interface RaffleEvent {
   total_entrants?: number;
   timestamp?: string;
   txDigest?: string;
+  eventSeq?: string; // Add event sequence for unique identification
 }
 
 /**
@@ -60,6 +61,7 @@ export const useRaffleEvents = (packageId: string, pollInterval = 5000) => {
           ...event.parsedJson,
           timestamp: event.timestampMs,
           txDigest: event.id.txDigest,
+          eventSeq: event.id.eventSeq, // Add event sequence for unique identification
           type: event.type,
         }));
 

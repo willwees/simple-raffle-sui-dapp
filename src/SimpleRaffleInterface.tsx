@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Card, Heading, Text, Button, Flex, Box, TextField, Badge } from "@radix-ui/themes";
 import toast from "react-hot-toast";
@@ -6,7 +6,10 @@ import { useCreateRaffle } from "./hooks/useCreateRaffle";
 import { useJoinRaffle } from "./hooks/useJoinRaffle";
 import { useRaffleList } from "./hooks/useRaffleList";
 import { usePickWinner } from "./hooks/usePickWinner";
+import { useRaffleEvents } from "./hooks/useRaffleEvents";
+import { WinnerAnnouncement } from "./components/WinnerAnnouncement";
 import { formatAddress, formatSUI, copyToClipboard } from "./utils/formatters";
+import { RAFFLE_PACKAGE_ID } from "./utils/constants";
 
 /**
  * 🎯 SIMPLE RAFFLE INTERFACE
@@ -31,11 +34,49 @@ export function SimpleRaffleInterface() {
   // State for form inputs
   const [raffleIdToJoin, setRaffleIdToJoin] = useState('');
   
+  // State for winner announcement
+  const [recentWinner, setRecentWinner] = useState<{
+    winner: string;
+    prize: number;
+    raffleId: string;
+  } | null>(null);
+  
+  // Track processed events to avoid showing the same winner multiple times
+  const [processedEventIds, setProcessedEventIds] = useState<Set<string>>(new Set());
+  
   // Custom hooks that handle blockchain operations
   const { createRaffle, isCreating } = useCreateRaffle();
   const { joinRaffle, isJoining } = useJoinRaffle();
   const { raffles, isLoading, refetch } = useRaffleList();
   const { pickWinner, isPicking } = usePickWinner();
+  const { events } = useRaffleEvents(RAFFLE_PACKAGE_ID);
+
+  // Listen for winner events
+  useEffect(() => {
+    if (events.length > 0) {
+      // Find the most recent WinnerPicked event that we haven't processed yet
+      const winnerEvent = events.find(event => {
+        const eventId = `${event.txDigest}-${event.eventSeq || event.timestamp}`;
+        return event.type.includes('WinnerPicked') && !processedEventIds.has(eventId);
+      });
+      
+      if (winnerEvent && winnerEvent.winner && winnerEvent.prize_amount) {
+        const eventId = `${winnerEvent.txDigest}-${winnerEvent.eventSeq || winnerEvent.timestamp}`;
+        
+        // Mark this event as processed
+        setProcessedEventIds(prev => new Set([...prev, eventId]));
+        
+        // Show the winner announcement
+        setRecentWinner({
+          winner: winnerEvent.winner,
+          prize: winnerEvent.prize_amount,
+          raffleId: winnerEvent.raffle_id || 'Unknown'
+        });
+        
+        console.log('New winner event detected:', winnerEvent);
+      }
+    }
+  }, [events, processedEventIds]);
 
   // Handle creating a new raffle
   const handleCreateRaffle = async () => {
@@ -116,6 +157,25 @@ export function SimpleRaffleInterface() {
 
   return (
     <Box>
+      {/* Winner Announcement - Show at the top when winner is picked */}
+      {recentWinner && (
+        <Box mb="6">
+          <WinnerAnnouncement 
+            winner={recentWinner.winner} 
+            prize={recentWinner.prize} 
+          />
+          <Flex justify="center" mt="3">
+            <Button 
+              variant="soft" 
+              onClick={() => setRecentWinner(null)}
+              size="1"
+            >
+              ✕ Dismiss
+            </Button>
+          </Flex>
+        </Box>
+      )}
+
       {/* Tab Navigation */}
       <Flex gap="2" mb="4">
         <Button 
