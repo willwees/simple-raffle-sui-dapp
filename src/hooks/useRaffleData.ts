@@ -13,9 +13,14 @@ interface RaffleData {
 }
 
 /**
+ * @deprecated This hook is deprecated and will be removed in a future version.
+ * Please use `useRaffleList` for fetching raffle data instead.
+ * 
  * Hook to fetch and manage raffle data using view functions
  */
 export const useRaffleData = (packageId: string) => {
+  console.warn('⚠️ useRaffleData is deprecated. Please use useRaffleList instead.');
+  
   const [loading, setLoading] = useState(false);
   const suiClient = useSuiClient();
   

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Card, Flex, Text, TextField, Button, Tabs } from "@radix-ui/themes";
-import { Package, Shuffle } from "lucide-react";
 import toast from "react-hot-toast";
 import { CreateRaffle } from "./CreateRaffle";
 import { JoinRaffle } from "./JoinRaffle";
@@ -9,7 +8,7 @@ import { RaffleCard } from "./RaffleCard";
 import { WinnerAnnouncement } from "./WinnerAnnouncement";
 import { DebugViewFunctions } from "./DebugViewFunctions";
 import { useRaffleEvents } from "../hooks/useRaffleEvents";
-import { useRaffleData } from "../hooks/useRaffleData";
+import { useRaffle } from "../hooks/useRaffle";
 import { DEFAULT_PACKAGE_ID } from "../utils/constants";
 import { isValidSuiObjectId } from "../utils/formatters";
 
@@ -21,7 +20,7 @@ export const RaffleManager = () => {
   const [loadingRaffles, setLoadingRaffles] = useState(false);
   const currentAccount = useCurrentAccount();
   const { events } = useRaffleEvents(packageId);
-  const { fetchRaffleData } = useRaffleData(packageId);
+  const { fetchRaffle } = useRaffle();
 
   // Helper function to fetch real raffle data for a list of raffle IDs
   const fetchRealRaffleData = async (raffleIds: string[]) => {
@@ -34,7 +33,7 @@ export const RaffleManager = () => {
     for (let i = 0; i < raffleIds.length; i++) {
       const raffleId = raffleIds[i];
       try {
-        const data = await fetchRaffleData(raffleId);
+        const data = await fetchRaffle(raffleId);
         if (data) {
           realRaffleData.push(data);
         }
@@ -171,7 +170,7 @@ export const RaffleManager = () => {
       <Card className="p-4">
         <Flex direction="column" gap="3">
           <Flex align="center" gap="2">
-            <Package size={20} />
+            <Text size="3">📦</Text>
             <Text size="3" weight="bold">Package Configuration</Text>
           </Flex>
           <Flex gap="2">
@@ -182,7 +181,7 @@ export const RaffleManager = () => {
               style={{ fontFamily: "monospace", fontSize: "14px", flex: 1 }}
             />
             <Button onClick={refreshData} variant="outline">
-              <Shuffle size={16} />
+              🔄
             </Button>
           </Flex>
           <Text size="1" color="gray">

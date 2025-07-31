@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, Flex, Text, Button, TextField } from "@radix-ui/themes";
-import { useRaffleData } from "../hooks/useRaffleData";
-import { DEFAULT_PACKAGE_ID } from "../utils/constants";
+import { useRaffle } from "../hooks/useRaffle";
 
 /**
  * Debug component to test view functions
@@ -9,19 +8,17 @@ import { DEFAULT_PACKAGE_ID } from "../utils/constants";
 export const DebugViewFunctions = () => {
   const [raffleId, setRaffleId] = useState("");
   const [debugData, setDebugData] = useState<any>(null);
-  const { fetchRaffleData, fetchEntrants, loading } = useRaffleData(DEFAULT_PACKAGE_ID);
+  const { fetchRaffle, loading } = useRaffle();
 
   const testViewFunctions = async () => {
     if (!raffleId.trim()) return;
     
     console.log("Testing view functions for raffle:", raffleId);
     
-    const data = await fetchRaffleData(raffleId);
-    const entrants = await fetchEntrants(raffleId);
+    const data = await fetchRaffle(raffleId);
     
     setDebugData({
       ...data,
-      entrants,
       timestamp: new Date().toISOString()
     });
   };

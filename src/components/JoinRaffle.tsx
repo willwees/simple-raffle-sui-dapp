@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { Button, Card, Flex, Text, TextField, Spinner, Badge } from "@radix-ui/themes";
-import { Users, Search, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { CONTRACT_MODULE, FUNCTIONS, ENTRY_FEE } from "../utils/constants";
 import { formatAddress, formatSUI, isValidSuiObjectId } from "../utils/formatters";
-import { useRaffleData } from "../hooks/useRaffleData";
+import { useRaffle } from "../hooks/useRaffle";
 
 interface JoinRaffleProps {
   packageId: string;
@@ -16,7 +15,7 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
   const [raffleId, setRaffleId] = useState("");
   const [raffleData, setRaffleData] = useState<any>(null);
   const [isJoining, setIsJoining] = useState(false);
-  const { fetchRaffleData, fetchEntrants, loading: dataLoading } = useRaffleData(packageId);
+  const { fetchRaffle, loading: dataLoading } = useRaffle();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const loadRaffleInfo = async () => {
@@ -30,20 +29,10 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
       return;
     }
 
-    const data = await fetchRaffleData(raffleId);
+    const data = await fetchRaffle(raffleId);
     if (data) {
       setRaffleData(data);
       toast.success("Raffle loaded successfully!");
-      
-      // Also try to fetch entrants list separately
-      try {
-        const entrantsList = await fetchEntrants(raffleId);
-        if (entrantsList.length > 0) {
-          setRaffleData((prev: any) => prev ? { ...prev, entrants: entrantsList } : null);
-        }
-      } catch (error) {
-        console.warn("Could not fetch entrants list:", error);
-      }
     } else {
       toast.error("Raffle not found or invalid");
       setRaffleData(null);
@@ -98,7 +87,7 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
     <Card className="p-6">
       <Flex direction="column" gap="4">
         <Flex align="center" gap="2">
-          <Users size={20} />
+          <Text size="5">👥</Text>
           <Text size="5" weight="bold">Join Existing Raffle</Text>
         </Flex>
 
@@ -116,11 +105,7 @@ export const JoinRaffle = ({ packageId }: JoinRaffleProps) => {
               disabled={dataLoading}
               variant="outline"
             >
-              {dataLoading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Search size={16} />
-              )}
+              {dataLoading ? "🔄" : "🔍"}
             </Button>
           </Flex>
         </Flex>
