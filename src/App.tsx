@@ -1,10 +1,22 @@
 import { ConnectButton } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading } from "@radix-ui/themes";
-import { WalletStatus } from "./WalletStatus";
+import { Toaster } from "react-hot-toast";
+import { RaffleManager } from "./components/RaffleManager";
 
 function App() {
   return (
     <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+      
       <Flex
         position="sticky"
         px="4"
@@ -12,25 +24,21 @@ function App() {
         justify="between"
         style={{
           borderBottom: "1px solid var(--gray-a2)",
+          background: "white",
+          zIndex: 10,
         }}
       >
         <Box>
-          <Heading>dApp Starter Template</Heading>
+          <Heading>🎲 Simple Raffle dApp</Heading>
         </Box>
 
         <Box>
           <ConnectButton />
         </Box>
       </Flex>
-      <Container>
-        <Container
-          mt="5"
-          pt="2"
-          px="4"
-          style={{ background: "var(--gray-a2)", minHeight: 500 }}
-        >
-          <WalletStatus />
-        </Container>
+      
+      <Container size="4" className="py-8">
+        <RaffleManager />
       </Container>
     </>
   );
