@@ -4,7 +4,7 @@ export const MIN_PARTICIPANTS = 2;
 export const RANDOM_OBJECT = "0x8";
 
 // Default package ID from your deployment
-export const DEFAULT_PACKAGE_ID = "0xac7aec8a42876bdde5fe440bc624a5458f322db3a66eb394ee67745ebc20c804";
+export const DEFAULT_PACKAGE_ID = "0x5c5d81f0c1b5a307df9358299e61f9b88f12711280c5f4864ef6d124f8c13d72";
 export const RAFFLE_PACKAGE_ID = DEFAULT_PACKAGE_ID;
 
 // Contract module and function names
@@ -18,6 +18,8 @@ export const FUNCTIONS = {
   GET_POOL_VALUE: "get_pool_value",
   IS_OPEN: "is_open",
   GET_OWNER: "get_owner",
+  GET_WINNER: "get_winner",
+  HAS_WINNER: "has_winner",
 } as const;
 
 // Error codes from the smart contract

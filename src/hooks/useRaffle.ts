@@ -11,6 +11,8 @@ export interface RaffleData {
   poolValue: string;
   entrantCount: number;
   isOpen: boolean;
+  winner?: string | null; // New field: winner address if exists
+  hasWinner: boolean; // New field: boolean indicator
 }
 
 /**
@@ -73,6 +75,20 @@ export function useRaffle() {
         arguments: [tx.object(raffleId)],
       });
 
+      tx.moveCall({
+        package: RAFFLE_PACKAGE_ID,
+        module: 'simple_raffle',
+        function: 'has_winner',
+        arguments: [tx.object(raffleId)],
+      });
+
+      tx.moveCall({
+        package: RAFFLE_PACKAGE_ID,
+        module: 'simple_raffle',
+        function: 'get_winner',
+        arguments: [tx.object(raffleId)],
+      });
+
       // Execute the transaction
       const result = await suiClient.devInspectTransactionBlock({ 
         transactionBlock: tx, 
@@ -84,6 +100,8 @@ export function useRaffle() {
       const poolValueResult = result.results?.[1];
       const isOpenResult = result.results?.[2];
       const ownerResult = result.results?.[3];
+      const hasWinnerResult = result.results?.[4];
+      const getWinnerResult = result.results?.[5];
 
       const entrantCount = entrantCountResult?.returnValues?.[0]?.[0] 
         ? parseInt(bcs.U64.parse(Uint8Array.from(entrantCountResult.returnValues[0][0]))) 
@@ -101,6 +119,25 @@ export function useRaffle() {
         ? '0x' + Array.from(ownerResult.returnValues[0][0]).map(b => b.toString(16).padStart(2, '0')).join('')
         : '0x0';
 
+      const hasWinner = hasWinnerResult?.returnValues?.[0]?.[0]
+        ? bcs.Bool.parse(Uint8Array.from(hasWinnerResult.returnValues[0][0]))
+        : false;
+
+      // Parse winner address - Option<address> returns either Some or None
+      let winner: string | null = null;
+      if (hasWinner && getWinnerResult?.returnValues?.[0]?.[0]) {
+        try {
+          // Option<address> when Some contains the address bytes
+          const winnerBytes = getWinnerResult.returnValues[0][0];
+          if (winnerBytes && winnerBytes.length >= 32) {
+            winner = '0x' + Array.from(winnerBytes.slice(1, 33)) // Skip option tag, take 32 bytes
+              .map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch (error) {
+          console.warn('Failed to parse winner address:', error);
+        }
+      }
+
       return {
         id: raffleId,
         entryFee: '1000000000', // Fixed 1 SUI entry fee
@@ -108,6 +145,8 @@ export function useRaffle() {
         entrantCount,
         isOpen,
         owner,
+        hasWinner,
+        winner,
       };
     } catch (error) {
       console.error('Error fetching raffle:', error);

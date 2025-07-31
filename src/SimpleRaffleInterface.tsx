@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Card, Heading, Text, Button, Flex, Box, TextField, Badge } from "@radix-ui/themes";
+import { Card, Heading, Text, Button, Flex, Box, TextField } from "@radix-ui/themes";
 import toast from "react-hot-toast";
 import { useCreateRaffle } from "./hooks/useCreateRaffle";
 import { useJoinRaffle } from "./hooks/useJoinRaffle";
 import { useRaffleList } from "./hooks/useRaffleList";
-import { usePickWinner } from "./hooks/usePickWinner";
 import { useRaffleEvents } from "./hooks/useRaffleEvents";
 import { WinnerAnnouncement } from "./components/WinnerAnnouncement";
-import { formatAddress, formatSUI, copyToClipboard } from "./utils/formatters";
+import { RaffleCard } from "./components/RaffleCard";
 import { RAFFLE_PACKAGE_ID } from "./utils/constants";
 
 /**
@@ -48,7 +47,6 @@ export function SimpleRaffleInterface() {
   const { createRaffle, isCreating } = useCreateRaffle();
   const { joinRaffle, isJoining } = useJoinRaffle();
   const { raffles, isLoading, refetch } = useRaffleList();
-  const { pickWinner, isPicking } = usePickWinner();
   const { events } = useRaffleEvents(RAFFLE_PACKAGE_ID);
 
   // Listen for winner events
@@ -120,24 +118,6 @@ export function SimpleRaffleInterface() {
       toast.success('Successfully joined raffle! 🎫');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to join raffle';
-      toast.error(errorMessage);
-      console.error(error);
-    }
-  };
-
-  // Handle picking a winner
-  const handlePickWinner = async (raffleId: string) => {
-    if (!currentAccount) {
-      toast.error('Please connect your wallet first');
-      return;
-    }
-
-    try {
-      await pickWinner(raffleId);
-      refetch();
-      toast.success('Winner picked successfully! 🏆');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to pick winner';
       toast.error(errorMessage);
       console.error(error);
     }
@@ -220,9 +200,8 @@ export function SimpleRaffleInterface() {
                 <RaffleCard 
                   key={raffle.id} 
                   raffle={raffle} 
-                  currentAccount={currentAccount}
-                  onPickWinner={handlePickWinner}
-                  isPicking={isPicking}
+                  packageId={RAFFLE_PACKAGE_ID}
+                  onUpdate={refetch}
                 />
               ))}
             </Box>
@@ -284,99 +263,5 @@ export function SimpleRaffleInterface() {
         </Card>
       )}
     </Box>
-  );
-}
-
-/**
- * 🎴 RAFFLE CARD COMPONENT
- * 
- * Displays information about a single raffle
- */
-function RaffleCard({ 
-  raffle, 
-  currentAccount, 
-  onPickWinner, 
-  isPicking 
-}: { 
-  raffle: any; 
-  currentAccount: any;
-  onPickWinner: (raffleId: string) => Promise<void>;
-  isPicking: boolean;
-}) {
-  const isOwner = currentAccount && raffle.owner === currentAccount.address;
-  
-  const handleCopyRaffleId = async () => {
-    const success = await copyToClipboard(raffle.id);
-    if (success) {
-      toast.success('Raffle ID copied to clipboard! 📋');
-    } else {
-      toast.error('Failed to copy raffle ID');
-    }
-  };
-  
-  return (
-    <Card size="2">
-      <Flex justify="between" align="start" mb="3">
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <Text size="1" color="gray">Raffle ID</Text>
-          <Flex align="center" gap="2" mt="1">
-            <Text 
-              size="1" 
-              weight="bold" 
-              style={{ 
-                fontFamily: 'monospace',
-                wordBreak: 'break-all',
-                lineHeight: '1.2'
-              }}
-            >
-              {raffle.id}
-            </Text>
-            <Button 
-              size="1" 
-              variant="ghost" 
-              onClick={handleCopyRaffleId}
-              title="Copy raffle ID"
-            >
-              📋
-            </Button>
-          </Flex>
-        </Box>
-        <Badge color={raffle.isOpen ? 'green' : 'gray'}>
-          {raffle.isOpen ? 'OPEN' : 'CLOSED'}
-        </Badge>
-      </Flex>
-      
-      <Flex gap="4" mb="3">
-        <Box>
-          <Text size="1" color="gray">Entry Fee</Text>
-          <Text size="2" weight="bold">{formatSUI(raffle.entryFee)} SUI</Text>
-        </Box>
-        <Box>
-          <Text size="1" color="gray">Prize Pool</Text>
-          <Text size="2" weight="bold">{formatSUI(raffle.poolValue)} SUI</Text>
-        </Box>
-        <Box>
-          <Text size="1" color="gray">Participants</Text>
-          <Text size="2" weight="bold">{raffle.entrantCount}</Text>
-        </Box>
-      </Flex>
-      
-      <Flex justify="between" align="center">
-        <Text size="1" color="gray">
-          Owner: {formatAddress(raffle.owner)}
-        </Text>
-        
-        {/* Show pick winner button for raffle owners */}
-        {isOwner && raffle.isOpen && raffle.entrantCount > 0 && (
-          <Button 
-            size="1" 
-            onClick={() => onPickWinner(raffle.id)}
-            disabled={isPicking}
-          >
-            {isPicking ? 'Picking...' : '🏆 Pick Winner'}
-          </Button>
-        )}
-      </Flex>
-    </Card>
   );
 }

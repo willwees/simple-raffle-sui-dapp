@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useSignAndExecuteTransaction, useCurrentAccount } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { Card, Flex, Text, Button, Badge, Spinner } from "@radix-ui/themes";
-import { Copy, Check, Crown, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { CONTRACT_MODULE, FUNCTIONS, RANDOM_OBJECT } from "../utils/constants";
 import { formatAddress, formatSUI, copyToClipboard } from "../utils/formatters";
@@ -11,10 +10,12 @@ interface RaffleCardProps {
   raffle: {
     id: string;
     owner: string;
-    entrants: string[];
+    entrants?: string[];
     entrantCount: number;
-    poolValue: number;
+    poolValue: number | string;
     isOpen: boolean;
+    hasWinner?: boolean;
+    winner?: string | null;
   };
   packageId: string;
   onUpdate?: () => void;
@@ -81,15 +82,15 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
         <Flex justify="between" align="center">
           <Flex align="center" gap="2">
             <Text size="3" weight="bold">Raffle</Text>
-            {isOwner && <Crown size={16} className="text-yellow-500" />}
+            {isOwner && <Text size="2">👑</Text>}
             {(raffle as any).isPlaceholder && (
               <Text size="1" className="px-2 py-1 bg-gray-100 rounded text-gray-600">
                 Click refresh for details
               </Text>
             )}
           </Flex>
-          <Badge color={raffle.isOpen ? "green" : "gray"}>
-            {raffle.isOpen ? "OPEN" : "CLOSED"}
+          <Badge color={raffle.hasWinner ? "blue" : raffle.isOpen ? "green" : "gray"}>
+            {raffle.hasWinner ? "FINISHED" : raffle.isOpen ? "OPEN" : "CLOSED"}
           </Badge>
         </Flex>
 
@@ -104,7 +105,7 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
             onClick={handleCopyId}
             className="hover:bg-gray-200"
           >
-            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? "✓" : "📋"}
           </Button>
         </Flex>
 
@@ -120,11 +121,24 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
           <Flex direction="column" gap="1" align="end">
             <Text size="1" color="gray">Participants</Text>
             <Flex align="center" gap="1">
-              <Users size={14} />
+              <Text size="2">👥</Text>
               <Text size="2" weight="bold">{raffle.entrantCount}</Text>
             </Flex>
           </Flex>
         </Flex>
+
+        {/* Winner Display */}
+        {raffle.hasWinner && raffle.winner && (
+          <Flex direction="column" gap="1" className="p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded border border-yellow-200">
+            <Flex align="center" gap="2">
+              <Text size="2">🏆</Text>
+              <Text size="2" weight="bold" color="amber">Winner Selected!</Text>
+            </Flex>
+            <Text size="1" className="font-mono text-yellow-700">
+              {formatAddress(raffle.winner)}
+            </Text>
+          </Flex>
+        )}
 
         {/* Owner info */}
         <Flex justify="between" align="center">
@@ -149,7 +163,7 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
         )}
 
         {/* Actions */}
-        {isOwner && raffle.isOpen && (
+        {isOwner && raffle.isOpen && !raffle.hasWinner && (
           <Button
             onClick={pickWinner}
             disabled={!hasMinParticipants || picking}
