@@ -21,7 +21,9 @@ interface RaffleCardProps {
   onUpdate?: () => void;
 }
 
-export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const RaffleCard = ({ raffle, packageId }: RaffleCardProps) => {
+  // Note: Automatic refresh is now handled by listening to WinnerPicked events in ViewRafflesTab
   const [copied, setCopied] = useState(false);
   const [picking, setPicking] = useState(false);
   const currentAccount = useCurrentAccount();
@@ -57,9 +59,10 @@ export const RaffleCard = ({ raffle, packageId, onUpdate }: RaffleCardProps) => 
       signAndExecute(
         { transaction: tx },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            console.log("Winner picking transaction successful:", result);
             toast.success("Winner picked successfully! 🎉");
-            onUpdate?.();
+            // The ViewRafflesTab will automatically refresh when it detects the WinnerPicked event
           },
           onError: (error) => {
             console.error("Transaction failed:", error);

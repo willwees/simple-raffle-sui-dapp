@@ -16,6 +16,7 @@ export function useRaffleList() {
   const suiClient = useSuiClient();
 
   const fetchRaffles = async () => {
+    console.log("useRaffleList: Starting to fetch raffles...");
     setIsLoading(true);
     
     try {
@@ -72,6 +73,7 @@ export function useRaffleList() {
       const resolvedRaffles = await Promise.all(rafflePromises);
       const validRaffles = resolvedRaffles.filter(raffle => raffle !== null);
       
+      console.log("useRaffleList: Fetched raffles:", validRaffles.length, "valid raffles");
       setRaffles(validRaffles);
     } catch (error) {
       console.error('Error fetching raffles:', error);

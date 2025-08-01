@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Card, Heading, Text, Button, Flex, Box } from "@radix-ui/themes";
 import { useRaffleList } from "../hooks/useRaffleList";
+import { useRaffleEvents } from "../hooks/useRaffleEvents";
 import { RaffleCard } from "./RaffleCard";
 import { RAFFLE_PACKAGE_ID } from "../utils/constants";
 
@@ -9,9 +11,42 @@ interface ViewRafflesTabProps {
 
 export function ViewRafflesTab({ onUpdate }: ViewRafflesTabProps) {
   const { raffles, isLoading, refetch } = useRaffleList();
+  const { events } = useRaffleEvents(RAFFLE_PACKAGE_ID);
 
-  const handleRefresh = () => {
-    refetch();
+  // Track processed winner events to avoid duplicate refreshes
+  const [processedWinnerEvents, setProcessedWinnerEvents] = useState<Set<string>>(new Set());
+
+  // Listen for WinnerPicked events and auto-refresh
+  useEffect(() => {
+    const newWinnerEvents = events.filter(event => {
+      if (!event.type || !event.type.includes('WinnerPicked')) return false;
+      
+      // Create unique event ID
+      const eventId = `${event.txDigest}-${event.eventSeq || event.timestamp}`;
+      return !processedWinnerEvents.has(eventId);
+    });
+
+    if (newWinnerEvents.length > 0) {
+      console.log(`Found ${newWinnerEvents.length} new WinnerPicked events, refreshing raffle list...`);
+      
+      // Mark events as processed
+      const newProcessedIds = new Set(processedWinnerEvents);
+      newWinnerEvents.forEach(event => {
+        const eventId = `${event.txDigest}-${event.eventSeq || event.timestamp}`;
+        newProcessedIds.add(eventId);
+      });
+      setProcessedWinnerEvents(newProcessedIds);
+
+      // Refresh with a small delay to ensure blockchain state is updated
+      setTimeout(() => {
+        refetch();
+      }, 1000);
+    }
+  }, [events, refetch, processedWinnerEvents]);
+
+  const handleRefresh = async () => {
+    console.log("ViewRafflesTab: Manual refresh triggered...");
+    await refetch();
     onUpdate?.();
   };
 
@@ -37,7 +72,6 @@ export function ViewRafflesTab({ onUpdate }: ViewRafflesTabProps) {
               key={raffle.id} 
               raffle={raffle} 
               packageId={RAFFLE_PACKAGE_ID}
-              onUpdate={handleRefresh}
             />
           ))}
         </Box>
