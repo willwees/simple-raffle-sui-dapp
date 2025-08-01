@@ -2,7 +2,7 @@ import { ConnectButton } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { Toaster } from "react-hot-toast";
 import { WalletStatus } from "./WalletStatus";
-import { SimpleRaffleInterface } from "./SimpleRaffleInterface";
+import { RaffleInterface } from "./RaffleInterface";
 
 /**
  * 🎯 SIMPLIFIED RAFFLE DAPP
@@ -62,7 +62,7 @@ function App() {
         </Box>
 
         {/* The main raffle interface component */}
-        <SimpleRaffleInterface />
+        <RaffleInterface />
       </Container>
     </>
   );
