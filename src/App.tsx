@@ -1,7 +1,6 @@
 import { ConnectButton } from "@mysten/dapp-kit";
 import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { Toaster } from "react-hot-toast";
-import { WalletStatus } from "./WalletStatus";
 import { RaffleInterface } from "./RaffleInterface";
 
 /**
@@ -45,7 +44,6 @@ function App() {
       >
         <Heading size="4">🎲 Simple Raffle dApp</Heading>
         <Flex align="center" gap="3">
-          <WalletStatus />
           <ConnectButton />
         </Flex>
       </Flex>
