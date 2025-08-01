@@ -1,11 +1,25 @@
 import { ConnectButton } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
+import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { Toaster } from "react-hot-toast";
-import { RaffleManager } from "./components/RaffleManager";
+import { WalletStatus } from "./WalletStatus";
+import { RaffleInterface } from "./RaffleInterface";
 
+/**
+ * 🎯 SIMPLIFIED RAFFLE DAPP
+ * 
+ * This is the main app component that shows:
+ * 1. Wallet connection at the top
+ * 2. Simple raffle interface in the middle
+ * 
+ * Key React concepts used:
+ * - Components: Reusable UI pieces
+ * - State: Data that can change (useState)
+ * - Props: Data passed between components
+ */
 function App() {
   return (
     <>
+      {/* Toast notifications - shows success/error messages */}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -17,6 +31,7 @@ function App() {
         }}
       />
       
+      {/* Header with wallet connection */}
       <Flex
         position="sticky"
         px="4"
@@ -28,17 +43,26 @@ function App() {
           zIndex: 10,
         }}
       >
-        <Box>
-          <Heading>🎲 Simple Raffle dApp</Heading>
+        <Heading size="4">🎲 Simple Raffle dApp</Heading>
+        <Flex align="center" gap="3">
+          <WalletStatus />
+          <ConnectButton />
+        </Flex>
+      </Flex>
+
+      {/* Main content */}
+      <Container size="4" py="6">
+        <Box mb="6">
+          <Heading size="6" mb="2">
+            Welcome to the Sui Raffle dApp! 🎉
+          </Heading>
+          <Text color="gray" size="3">
+            Connect your wallet and start creating or joining raffles on the Sui blockchain.
+          </Text>
         </Box>
 
-        <Box>
-          <ConnectButton />
-        </Box>
-      </Flex>
-      
-      <Container size="4" className="py-8">
-        <RaffleManager />
+        {/* The main raffle interface component */}
+        <RaffleInterface />
       </Container>
     </>
   );

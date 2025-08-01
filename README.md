@@ -81,8 +81,13 @@ src/
 │   ├── RaffleManager.tsx     # Main component with tabs
 │   └── WinnerAnnouncement.tsx # Winner celebration
 ├── hooks/
+│   ├── useCreateRaffle.ts    # Create new raffles
+│   ├── useJoinRaffle.ts      # Join existing raffles  
+│   ├── usePickWinner.ts      # Pick raffle winners
+│   ├── useRaffle.ts          # Single raffle data fetching
 │   ├── useRaffleEvents.ts    # Real-time event listening
-│   └── useRaffleData.ts      # Raffle data fetching
+│   ├── useRaffleList.ts      # List all raffles
+│   └── useRaffleData.ts      # ⚠️ DEPRECATED - use useRaffle instead
 ├── utils/
 │   ├── constants.ts          # Contract constants 
 │   └── formatters.ts         # Utility functions
