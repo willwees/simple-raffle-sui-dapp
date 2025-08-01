@@ -28,6 +28,8 @@ pick_winner(raffle_id: string, random: "0x8")     // Pick winner (owner only)
 - **Entry Fee**: 1 SUI (1,000,000,000 MIST)
 - **Min Participants**: 2 players
 - **Random Object**: `0x8`
+- **Default Networks**: Devnet, Testnet, Mainnet support
+- **Package IDs**: Environment-based configuration with automatic fallbacks
 
 ## 🛠️ Setup & Installation
 
@@ -45,53 +47,88 @@ cd simple-raffle-dapp
 # Install dependencies
 bun install
 
+# Copy environment configuration
+cp .env.example .env
+
+# Update .env with your package ID (optional - has working defaults)
+# VITE_SUI_NETWORK=testnet
+# VITE_RAFFLE_PACKAGE_ID=your_package_id
+
 # Start development server
 bun dev
 ```
 
+### Environment Configuration
+The app supports multiple Sui networks with automatic package ID management:
+
+```bash
+# .env file
+VITE_SUI_NETWORK=testnet  # Options: devnet, testnet, mainnet
+VITE_RAFFLE_PACKAGE_ID=0xac7aec8a42876bdde5fe440bc624a5458f322db3a66eb394ee67745ebc20c804
+```
+
+**Network Support:**
+- **Devnet**: Development and testing (automatic fallback)
+- **Testnet**: More realistic testing environment (default)
+- **Mainnet**: Production deployment
+
 ### Package Configuration
-1. Deploy your raffle smart contract to Sui
-2. Copy the package ID from deployment
-3. Enter the package ID in the dApp's package configuration field
-4. Start creating and joining raffles!
+The app automatically handles package IDs for different networks:
+
+1. **Environment Variables** (Recommended):
+   - Copy `.env.example` to `.env`
+   - Set your `VITE_SUI_NETWORK` and `VITE_RAFFLE_PACKAGE_ID`
+
+2. **Automatic Fallback**:
+   - Uses hardcoded package IDs in `networkConfig.ts` if environment variables are not set
+   - Testnet: `0xac7aec8a42876bdde5fe440bc624a5458f322db3a66eb394ee67745ebc20c804`
+
+3. **Custom Deployment**:
+   - Deploy your smart contract to Sui
+   - Update the package ID in `.env` or `networkConfig.ts`
 
 ## 🎯 How to Use
 
 ### For Raffle Creators
 1. **Connect Wallet** - Connect your Sui wallet
-2. **Set Package ID** - Enter your deployed contract's package ID
-3. **Create Raffle** - Click "Create Raffle" button
-4. **Share Raffle ID** - Copy and share the raffle ID with participants
-5. **Pick Winner** - Once 2+ players join, click "Pick Winner"
+2. **Create Raffle** - Click "Create Raffle" button in the Create tab
+3. **Share Raffle ID** - Copy and share the raffle ID with participants  
+4. **Pick Winner** - Once 2+ players join, click "Pick Winner" on your raffle card
 
 ### For Participants
 1. **Connect Wallet** - Connect your Sui wallet with at least 1 SUI
-2. **Join Raffle** - Enter the raffle ID and click "Load Raffle Info"
-3. **Pay Entry Fee** - Click "Join for 1 SUI" to participate
-4. **Wait for Winner** - Wait for the raffle owner to pick a winner
+2. **Browse Raffles** - View active raffles in the "View Raffles" tab
+3. **Join Raffle** - Use "Join Raffle" tab to enter a raffle ID
+4. **Pay Entry Fee** - Click "Join Raffle" and pay 1 SUI to participate
+5. **Wait for Winner** - Wait for the raffle owner to pick a winner
 
 ## 🏗️ Project Structure
 
 ```
 src/
 ├── components/
-│   ├── CreateRaffle.tsx      # Create new raffles
-│   ├── JoinRaffle.tsx        # Join existing raffles  
-│   ├── RaffleCard.tsx        # Display raffle information
-│   ├── RaffleManager.tsx     # Main component with tabs
-│   └── WinnerAnnouncement.tsx # Winner celebration
+│   ├── CreateRaffleTab.tsx   # Create new raffles tab
+│   ├── JoinRaffleTab.tsx     # Join existing raffles tab
+│   ├── ViewRafflesTab.tsx    # View all raffles tab
+│   ├── TabNavigation.tsx     # Tab switching navigation
+│   ├── RaffleCard.tsx        # Individual raffle display
+│   ├── WinnerAnnouncement.tsx # Winner celebration
+│   └── WinnerNotification.tsx # Winner event notifications
 ├── hooks/
 │   ├── useCreateRaffle.ts    # Create new raffles
 │   ├── useJoinRaffle.ts      # Join existing raffles  
 │   ├── usePickWinner.ts      # Pick raffle winners
 │   ├── useRaffle.ts          # Single raffle data fetching
 │   ├── useRaffleEvents.ts    # Real-time event listening
-│   ├── useRaffleList.ts      # List all raffles
-│   └── useRaffleData.ts      # ⚠️ DEPRECATED - use useRaffle instead
+│   └── useRaffleList.ts      # List all raffles
 ├── utils/
 │   ├── constants.ts          # Contract constants 
 │   └── formatters.ts         # Utility functions
 ├── App.tsx                   # Main app component
+├── RaffleInterface.tsx       # Main raffle interface
+├── WalletStatus.tsx          # Wallet connection status
+├── OwnedObjects.tsx          # User's owned objects
+├── networkConfig.ts          # Network and package configuration
 └── main.tsx                  # App entry point
 ```
 
@@ -99,11 +136,14 @@ src/
 
 ### Features
 - **Responsive Design**: Works on desktop and mobile
-- **Real-time Updates**: Live event updates every 5 seconds
+- **Real-time Updates**: Event-driven updates every 5 seconds
 - **Loading States**: Smooth loading indicators
 - **Toast Notifications**: Success/error feedback
 - **Copy to Clipboard**: Easy sharing of raffle IDs
-- **Winner Celebrations**: Confetti animation for winners
+- **Winner Celebrations**: Animated winner announcements
+- **Tab Interface**: Clean tabbed navigation (Create/Join/View)
+- **Event-Driven Refresh**: Automatic UI updates when winners are picked
+- **Component Architecture**: Modular, reusable components
 
 ### Design System
 - **Primary Color**: Blue (#3b82f6)
@@ -111,6 +151,29 @@ src/
 - **Error Color**: Red (#ef4444)
 - **Typography**: Clean, readable fonts
 - **Cards**: White background with subtle shadows
+
+## 🏛️ Architecture
+
+### Component Composition
+The app uses a modular component architecture:
+
+```
+App (Main container)
+└── RaffleInterface (Main orchestrator)
+    ├── WinnerNotification (Event-driven winner display)
+    ├── TabNavigation (Tab switching UI)
+    ├── CreateRaffleTab (Raffle creation)
+    ├── JoinRaffleTab (Join via raffle ID)
+    └── ViewRafflesTab (Browse all raffles)
+        └── RaffleCard (Individual raffle with actions)
+```
+
+### Event-Driven Updates
+The app automatically refreshes when:
+- New raffles are created
+- Players join raffles  
+- Winners are picked
+- Uses `useRaffleEvents` hook for real-time blockchain event listening
 
 ## 🔧 Development
 
@@ -186,13 +249,13 @@ MIT License - see LICENSE file for details
 
 - Built with [Mysten Labs dApp Kit](https://github.com/MystenLabs/dapp-kit)
 - UI components from [Radix UI](https://www.radix-ui.com/)
-- Icons from [Lucide React](https://lucide.dev/)
 - Notifications by [React Hot Toast](https://react-hot-toast.com/)
+- Icons using emoji for consistency and simplicity
 
 ## 📞 Support
 
 For issues or questions:
-1. Check the [GitHub Issues](https://github.com/willwees/simple-raffle-sui/issues)
+1. Check the [GitHub Issues](https://github.com/willwees/simple-raffle-sui-dapp/issues)
 2. Create a new issue with detailed description
 3. Include error messages and browser console logs
 
