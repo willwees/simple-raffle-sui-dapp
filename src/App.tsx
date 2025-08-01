@@ -16,7 +16,7 @@ import { SimpleRaffleInterface } from "./SimpleRaffleInterface";
  * - State: Data that can change (useState)
  * - Props: Data passed between components
  */
-function SimpleApp() {
+function App() {
   return (
     <>
       {/* Toast notifications - shows success/error messages */}
@@ -68,4 +68,4 @@ function SimpleApp() {
   );
 }
 
-export default SimpleApp;
+export default App;
